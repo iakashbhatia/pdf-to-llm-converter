@@ -24,7 +24,7 @@ Convert large PDF files (140MB+) containing mixed content (native text, scanned 
 ### Install from source
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/pdf-to-llm-converter.git
+git clone https://github.com/iakashbhatia/pdf-to-llm-converter.git
 cd pdf-to-llm-converter
 pip install -e .
 ```
