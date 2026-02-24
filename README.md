@@ -1,153 +1,164 @@
-# pdf-to-llm-converter
+# PDF-to-LLM Converter
 
-Convert large PDF files — including scanned pages, embedded images, and native text — into structured Markdown for LLM ingestion. Built for legal documents where accuracy and completeness are critical.
+Convert large PDF files (140MB+) containing mixed content (native text, scanned images, embedded pictures) into structured markdown suitable for LLM ingestion. Designed for legal documents where accuracy and completeness are critical.
 
 ## Features
 
-- **Handles large PDFs (140 MB+)** via chunked, memory-efficient processing
-- **Mixed-content detection** — automatically classifies each page as native text, scanned, or mixed
-- **OCR with preprocessing** — deskew, contrast enhancement, noise reduction via Tesseract
-- **Structured Markdown output** — headings, tables, lists, page metadata comments, and a table of contents
-- **Q&A comparison workflow** — semantically match questions from one PDF against answer sections in another using sentence-transformers
-- **CLI interface** — `convert` and `compare` commands with sensible defaults
-
-## Requirements
-
-- Python 3.10+
-- [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) installed and on your PATH
-
-### Install Tesseract
-
-```bash
-# macOS
-brew install tesseract
-
-# Ubuntu / Debian
-sudo apt-get install tesseract-ocr
-
-# Windows
-# Download installer from https://github.com/tesseract-ocr/tesseract
-```
+- **Large PDF Support**: Process 140MB+ PDFs efficiently with chunked processing
+- **Mixed Content Handling**: Automatically detects and processes native text, scanned pages, and mixed content
+- **High-Accuracy OCR**: Uses Tesseract with preprocessing (deskewing, contrast enhancement, noise reduction)
+- **Structured Output**: Generates markdown with preserved document hierarchy, tables, lists, and metadata
+- **Q&A Comparison**: Semantically match questions from one PDF against answer sections in another
+- **Round-Trip Serialization**: Parse markdown back into document models without loss
 
 ## Installation
 
-```bash
-pip install pdf-to-llm-converter
-```
+### Prerequisites
 
-Or install from source:
+1. **Python 3.10+**
+2. **Tesseract OCR**:
+   - macOS: `brew install tesseract`
+   - Ubuntu: `sudo apt-get install tesseract-ocr`
+   - Windows: Download from [tesseract-ocr/tesseract](https://github.com/tesseract-ocr/tesseract)
+
+### Install from source
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/pdf-to-llm-converter.git
 cd pdf-to-llm-converter
-pip install -e ".[dev]"
+pip install -e .
+```
+
+### Install dependencies only
+
+```bash
+pip install -r requirements.txt
 ```
 
 ## Usage
 
-### Convert a PDF to Markdown
+### Convert PDF to Markdown
 
 ```bash
-# Output to stdout
+# Write to stdout
 pdf-to-llm convert document.pdf
 
-# Output to file
+# Write to file
 pdf-to-llm convert document.pdf -o output.md
 
 # With options
-pdf-to-llm convert document.pdf -o output.md \
-  --chunk-size 25 \
-  --ocr-threshold 0.8 \
-  --verbose
+pdf-to-llm convert document.pdf -o output.md --chunk-size 100 --verbose
 ```
 
-### Compare a Questions PDF against an Answers PDF
+### Compare Questions and Answers PDFs
 
 ```bash
 pdf-to-llm compare questions.pdf answers.pdf
 
 # With options
-pdf-to-llm compare questions.pdf answers.pdf \
-  --top-n 5 \
-  --min-similarity 0.4 \
-  --verbose
+pdf-to-llm compare questions.pdf answers.pdf --top-n 5 --min-similarity 0.6
 ```
 
-### CLI Reference
+### CLI Options
 
-```
-pdf-to-llm convert [OPTIONS] PDF_PATH
+**Convert command:**
+- `-o, --output PATH`: Output file path (writes to stdout if omitted)
+- `--ocr-threshold FLOAT`: OCR confidence warning threshold (default: 0.7)
+- `--chunk-size INTEGER`: Pages per processing chunk (default: 50)
+- `-v, --verbose`: Enable detailed progress logging
 
-  Options:
-    -o, --output PATH        Output file path (stdout if omitted)
-    --ocr-threshold FLOAT    OCR confidence warning threshold  [default: 0.7]
-    --chunk-size INTEGER     Pages per processing chunk        [default: 50]
-    -v, --verbose            Detailed progress logging
-    --help
+**Compare command:**
+- `--top-n INTEGER`: Number of top matches per question (default: 3)
+- `--min-similarity FLOAT`: Minimum similarity threshold (default: 0.5)
+- `--ocr-threshold FLOAT`: OCR confidence warning threshold (default: 0.7)
+- `--chunk-size INTEGER`: Pages per processing chunk (default: 50)
+- `-v, --verbose`: Enable detailed progress logging
 
-pdf-to-llm compare [OPTIONS] QUESTIONS_PDF ANSWERS_PDF
+## How It Works
 
-  Options:
-    --top-n INTEGER          Top matches per question          [default: 3]
-    --min-similarity FLOAT   Minimum similarity threshold      [default: 0.5]
-    --ocr-threshold FLOAT    OCR confidence warning threshold  [default: 0.7]
-    --chunk-size INTEGER     Pages per processing chunk        [default: 50]
-    -v, --verbose            Detailed progress logging
-    --help
-```
-
-## Output Format
-
-```markdown
-<!-- toc -->
-- [Section Title](#section-title) (p. 1-5)
-- [Another Section](#another-section) (p. 6-10)
-<!-- /toc -->
-
-<!-- page: 1 -->
-<!-- section: Section Title -->
-# Section Title
-
-Body text here...
-
-| Col A | Col B |
-|-------|-------|
-| val1  | val2  |
-
-<!-- page: 2 -->
-...
-```
+1. **PDF Ingestion**: Opens PDF and processes in chunks to avoid memory issues
+2. **Page Classification**: Classifies each page as native text (>80% text), scanned (<20% text), or mixed
+3. **Content Extraction**:
+   - Native text: Direct extraction via PyMuPDF
+   - Scanned: OCR via Tesseract with preprocessing
+   - Mixed: Both methods, then intelligent merging
+4. **Markdown Conversion**: Generates structured markdown with:
+   - Table of contents with page references
+   - Page number metadata comments
+   - Section metadata comments
+   - Preserved tables, lists, and headings
+5. **Q&A Matching** (optional): Uses sentence-transformers to compute semantic similarity between questions and answer sections
 
 ## Architecture
 
 ```
-PDF file
-  └─► ChunkManager        — splits into page-range chunks
-        └─► PageClassifier — native_text / scanned / mixed
-              ├─► TextExtractor   — PyMuPDF block-level extraction
-              ├─► OCREngine       — Tesseract with preprocessing
-              └─► ContentMerger   — deduplicates overlapping regions
-                    └─► MarkdownConverter — structured markdown output
-
-Q&A workflow:
-  Questions PDF + Answers PDF
-    └─► PDFProcessor (both)
-          └─► QAMatcher — sentence-transformers cosine similarity
+PDF → ChunkManager → PageClassifier → TextExtractor/OCREngine → ContentMerger → MarkdownConverter → Output
 ```
+
+Key components:
+- **ChunkManager**: Splits large PDFs into manageable page ranges
+- **PageClassifier**: Determines content type (native/scanned/mixed)
+- **TextExtractor**: Extracts native text with structure preservation
+- **OCREngine**: Performs OCR with preprocessing pipeline
+- **ContentMerger**: Merges native text and OCR results for mixed pages
+- **MarkdownConverter**: Converts to/from structured markdown
+- **QAMatcher**: Semantic similarity matching for Q&A workflow
 
 ## Development
 
+### Run Tests
+
 ```bash
-# Install with dev dependencies
-pip install -e ".[dev]"
-
-# Run tests
-pytest
-
-# Run tests with verbose output
-pytest -v
+pytest tests/ -v
 ```
+
+### Project Structure
+
+```
+pdf-to-llm-converter/
+├── pdf_to_llm_converter/     # Main package
+│   ├── models.py             # Data models
+│   ├── chunk_manager.py      # PDF chunking
+│   ├── page_classifier.py    # Page classification
+│   ├── text_extractor.py     # Native text extraction
+│   ├── ocr_engine.py          # OCR processing
+│   ├── content_merger.py     # Content merging
+│   ├── markdown_converter.py # Markdown conversion
+│   ├── pdf_processor.py      # Main pipeline
+│   ├── qa_matcher.py         # Q&A matching
+│   └── cli.py                # CLI interface
+├── tests/                    # Test suite
+├── .kiro/specs/              # Design specifications
+├── pyproject.toml            # Package configuration
+└── README.md                 # This file
+```
+
+## Requirements
+
+- Python 3.10+
+- PyMuPDF (fitz) >= 1.23.0
+- pytesseract >= 0.3.10
+- Pillow >= 10.0.0
+- sentence-transformers >= 2.2.0
+- click >= 8.1.0
+- pytest >= 7.4.0 (dev)
+- hypothesis >= 6.82.0 (dev)
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT License - see LICENSE file for details
+
+## Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new functionality
+4. Ensure all tests pass
+5. Submit a pull request
+
+## Acknowledgments
+
+- Built with [PyMuPDF](https://pymupdf.readthedocs.io/) for PDF parsing
+- OCR powered by [Tesseract](https://github.com/tesseract-ocr/tesseract)
+- Semantic matching via [sentence-transformers](https://www.sbert.net/)

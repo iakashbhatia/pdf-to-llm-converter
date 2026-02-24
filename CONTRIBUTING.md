@@ -1,49 +1,81 @@
-# Contributing
+# Contributing to PDF-to-LLM Converter
 
-## Setup
+Thank you for your interest in contributing! This document provides guidelines for contributing to the project.
+
+## Getting Started
+
+1. Fork the repository
+2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/pdf-to-llm-converter.git`
+3. Create a virtual environment: `python -m venv .venv`
+4. Activate it: `source .venv/bin/activate` (or `.venv\Scripts\activate` on Windows)
+5. Install dev dependencies: `pip install -r requirements-dev.txt`
+6. Install Tesseract OCR (see README for platform-specific instructions)
+
+## Development Workflow
+
+1. Create a feature branch: `git checkout -b feature/your-feature-name`
+2. Make your changes
+3. Add tests for new functionality
+4. Run tests: `pytest tests/ -v`
+5. Ensure all tests pass
+6. Commit your changes: `git commit -m "Description of changes"`
+7. Push to your fork: `git push origin feature/your-feature-name`
+8. Open a pull request
+
+## Code Style
+
+- Follow PEP 8 guidelines
+- Use type hints for function signatures
+- Add docstrings for public functions and classes
+- Keep functions focused and single-purpose
+- Use descriptive variable names
+
+## Testing
+
+- Write unit tests for all new functionality
+- Use pytest for test execution
+- Use hypothesis for property-based tests where appropriate
+- Aim for high test coverage
+- Test edge cases and error conditions
+
+### Running Tests
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/pdf-to-llm-converter.git
-cd pdf-to-llm-converter
-pip install -e ".[dev]"
+# Run all tests
+pytest tests/ -v
+
+# Run specific test file
+pytest tests/test_pdf_processor.py -v
+
+# Run with coverage
+pytest tests/ --cov=pdf_to_llm_converter
 ```
 
-## Running Tests
+## Documentation
 
-```bash
-pytest -v
-```
+- Update README.md if adding new features or changing usage
+- Add docstrings to new functions and classes
+- Update design documents in `.kiro/specs/` if changing architecture
 
-## Project Structure
+## Pull Request Guidelines
 
-```
-pdf_to_llm_converter/
-  models.py           — all dataclasses and enums
-  chunk_manager.py    — chunked PDF page iteration
-  page_classifier.py  — native_text / scanned / mixed detection
-  text_extractor.py   — PyMuPDF native text extraction
-  ocr_engine.py       — Tesseract OCR with preprocessing
-  content_merger.py   — merge native + OCR for mixed pages
-  markdown_converter.py — to_markdown() and from_markdown()
-  pdf_processor.py    — full pipeline orchestration
-  qa_matcher.py       — semantic Q&A matching
-  cli.py              — Click CLI entry points
+- Provide a clear description of the changes
+- Reference any related issues
+- Ensure all tests pass
+- Update documentation as needed
+- Keep PRs focused on a single feature or fix
+- Respond to review feedback promptly
 
-tests/
-  test_chunk_manager.py
-  test_page_classifier.py
-  test_text_extractor.py
-  test_ocr_engine.py
-  test_content_merger.py
-  test_extraction_routing.py
-  test_markdown_converter.py
-  test_pdf_processor.py
-  test_qa_matcher.py
-  test_cli.py
-```
+## Reporting Issues
 
-## Pull Requests
+When reporting issues, please include:
+- Python version
+- Operating system
+- Tesseract version
+- Steps to reproduce
+- Expected vs actual behavior
+- Error messages or logs
 
-- Keep changes focused and minimal
-- Add or update tests for any new behaviour
-- Ensure `pytest` passes before opening a PR
+## Questions?
+
+Feel free to open an issue for questions or discussions about the project.
